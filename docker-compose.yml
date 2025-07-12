@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: opentask-postgres
+    environment:
+      POSTGRES_DB: opentask
+      POSTGRES_USER: opentask
+      POSTGRES_PASSWORD: opentask123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - opentask-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: opentask-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@opentask.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - opentask-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: opentask-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: opentask
+      MINIO_ROOT_PASSWORD: opentask123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - opentask-network
+
+  backend:
+    build:
+      context: ../opentask-backend
+      dockerfile: Dockerfile
+    container_name: opentask-backend
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=opentask;Username=opentask;Password=opentask123
+      - MinIO__Endpoint=minio:9000
+      - MinIO__AccessKey=opentask
+      - MinIO__SecretKey=opentask123
+    ports:
+      - "5000:8080"
+    depends_on:
+      - postgres
+      - minio
+    networks:
+      - opentask-network
+
+  frontend:
+    build:
+      context: ../opentask-frontend
+      dockerfile: Dockerfile
+    container_name: opentask-frontend
+    environment:
+      - VITE_API_URL=http://localhost:5000
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - opentask-network
+
+volumes:
+  postgres_data:
+  minio_data:
+
+networks:
+  opentask-network:
+    driver: bridge
