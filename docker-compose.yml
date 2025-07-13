@@ -45,7 +45,7 @@ services:
 
   backend:
     build:
-      context: ../opentask-backend
+      context: ../backend
       dockerfile: Dockerfile
     container_name: opentask-backend
     environment:
@@ -64,7 +64,7 @@ services:
 
   frontend:
     build:
-      context: ../opentask-frontend
+      context: ../frontend
       dockerfile: Dockerfile
     container_name: opentask-frontend
     environment:
